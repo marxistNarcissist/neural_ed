@@ -1,0 +1,7 @@
+numpy
+pandas
+tiktoken
+torch
+scikit-learn
+joblib
+pillow

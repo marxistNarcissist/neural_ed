@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "neural_ed"
+version = "0.1.0"
+description = "Process Text or DataFrame Before Going to Feed Deep Learning Model"
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = [
+    "numpy",
+    "pandas",
+    "tiktoken",
+    "torch",
+    "scikit-learn",
+    "joblib",
+    "pillow"
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
