@@ -205,14 +205,34 @@ class ImageProcessor:
             return (t * self.std.unsqueeze(0) + self.mean.unsqueeze(0)).clamp(0, 1)
         return (t * self.std + self.mean).clamp(0, 1)
 
-    def to_numpy_image(self, t: torch.Tensor) -> np.ndarray:
-        """(B,C,H,W) ya (C,H,W) → uint8 (H,W,C) numpy — cv2/PIL me dikhane ke liye."""
-        t = self.denormalize(t)
-        if t.ndim == 4:
-            t = t[0]
-        arr = (t.mul(255).round().clamp(0, 255)
-                .to(torch.uint8).permute(1, 2, 0).cpu().numpy())
-        return arr.squeeze(-1) if arr.shape[-1] == 1 else arr
+    def to_tensor_array(self, t: torch.Tensor, keep_normalized: bool = True) -> torch.Tensor:
+        """
+        CNN-ready channel-first tensor lauta deta hai — (C, H, W) ya batched
+        (N, C, H, W). Koi permute/numpy conversion NAHI hoti, isliye shape
+        hamesha (..., C, H, W) hi rehti hai, jo CNN input ke liye correct hai.
+
+        Parameters
+        ----------
+        t : torch.Tensor
+            `process()` / `process_batch()` se aaya (C,H,W) ya (N,C,H,W) tensor.
+        keep_normalized : bool, default True
+            True  -> mean/std normalized values hi rakhta hai (default; CNN
+                     training/inference ke liye yahi sahi input hai).
+            False -> `denormalize()` karke [0,1] range me le aata hai, lekin
+                     channel-first hi rehta hai (numpy/HWC me convert NAHI
+                     karta — visualization ke liye nahi, encoding ke liye hai).
+
+        Returns
+        -------
+        torch.Tensor, same ndim as input, contiguous memory.
+        """
+        if not torch.is_tensor(t):
+            raise TypeError(f"Expected torch.Tensor, got {type(t).__name__}")
+        if t.ndim not in (3, 4):
+            raise ValueError(f"Expected (C,H,W) or (N,C,H,W), got shape {tuple(t.shape)}")
+
+        out = t if keep_normalized else self.denormalize(t)
+        return out.to(self.dtype).contiguous()
 
     # ------------------------------------------------------------ niceties
     def __call__(self, image, **kw) -> torch.Tensor:
