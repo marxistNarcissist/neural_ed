@@ -15,8 +15,8 @@ Requires-Dist: pillow
 # neural_ed
 
 Lightweight encoders/scalers for turning pandas `Series` and images into
-model-ready tensors and arrays — tokenization (LLM + classic NLP), unique-value
-encoding, numeric scaling, and image preprocessing.
+model-ready tensors and arrays — tokenization (LLM + classic NLP), categorical
+and unique-value encoding, numeric scaling, and image preprocessing.
 
 ## Install
 
@@ -31,6 +31,7 @@ neural_ed/
 ├── SeriesEncoder.py     # pandas Series -> padded BPE token tensors
 ├── LLmEncoder.py         # text list -> causal-LM training batches
 ├── NlpEncoder.py         # text list -> TF-IDF over BPE tokens
+├── OrdinalEncoder.py     # categorical Series -> integer codes
 ├── UniqueEncoder.py      # unique-valued Series -> integer codes
 ├── Normalized.py         # numeric Series scalers (MinMax/Standard/Robust/...)
 ├── ImageEncoder.py       # images/paths -> normalized tensors
@@ -139,16 +140,50 @@ raw text to space-joined `cl100k_base` token ids.
 
 ---
 
+## `OrdinalEncoder`
+
+Scikit-learn-style categorical → integer encoder with explicit
+unknown/missing handling. Use this for a `Series` with **repeated**
+category labels (e.g. `"A"`, `"B"`, `"C"` appearing many times) — each
+distinct category always maps to the same code, wherever it appears.
+
+```python
+from neural_ed import OrdinalEncoder
+
+enc = OrdinalEncoder(handle_unknown="use_encoded_value", unknown_value=-1)
+codes = enc.fit_transform(df["category"])
+enc.inverse_transform(codes)
+```
+
+**Constructor**
+- `OrdinalEncoder(categories="auto", start=0, handle_unknown="error", unknown_value=None, encode_missing_as=np.nan, dtype=np.float64)`
+  - `handle_unknown="error"` raises on unseen categories at transform time;
+    `"use_encoded_value"` maps them to `unknown_value` instead.
+
+**Methods**
+- `fit(series) -> self` — learns categories (sorted, or in given order if
+  `categories` is an explicit sequence).
+- `transform(series) -> pd.Series` — maps categories to integer codes.
+- `inverse_transform(series) -> pd.Series` — maps codes back to categories.
+- `fit_transform(series) -> pd.Series` (inherited from `BaseEncoder`).
+- `get_params() -> dict`
+- `len(encoder)` — number of learned categories.
+
+**Attributes (post-fit):** `categories_`, `mapping_`, `inverse_mapping_`.
+
+---
+
 ## `UniqueEncoder`
 
 Scikit-learn-style encoder for a `Series` whose values are expected to be
 **unique** (e.g. an ID column, a primary key, a slug) — a 1:1 mapping between
 each distinct value and an integer code, with explicit unknown/missing
-handling. Unlike a general categorical encoder, this is not meant for
-repeated labels: by default it enforces uniqueness at fit time and raises if
-it finds duplicates, since a repeat would mean the column isn't actually
-unique-valued as assumed. Codes are assigned by first-appearance order (there
-is no natural ordering among unique identifiers to sort by).
+handling. Unlike `OrdinalEncoder`, this is not meant for repeated category
+labels: by default it enforces uniqueness at fit time and raises if it finds
+duplicates, since a repeat would mean the column isn't actually unique-valued
+as assumed — use `OrdinalEncoder` for that case instead. Codes are assigned
+by first-appearance order (there is no natural ordering among unique
+identifiers to sort by).
 
 ```python
 from neural_ed import UniqueEncoder
@@ -302,9 +337,13 @@ print(result.summary())
 
 ## Notes
 
-- All scalers, `UniqueEncoder`, and `SeriesEncoder`/`LLmEncoder` operate on a
-  single `pandas.Series` (or list of strings) at a time — encode
-  column-by-column / field-by-field for a full DataFrame.
+- All scalers, `OrdinalEncoder`, `UniqueEncoder`, and `SeriesEncoder`/
+  `LLmEncoder` operate on a single `pandas.Series` (or list of strings) at a
+  time — encode column-by-column / field-by-field for a full DataFrame.
+- Use `OrdinalEncoder` for repeated category labels and `UniqueEncoder` for
+  columns where every value should be distinct (e.g. an ID column) — picking
+  the wrong one either loses the categorical grouping or raises a
+  `DuplicateValueError`.
 - `LLmEncoder` and `SeriesEncoder` both use `tiktoken`; make sure the intended
   `encoding` (`o200k_base` by default) matches the model you're training or
   targeting.

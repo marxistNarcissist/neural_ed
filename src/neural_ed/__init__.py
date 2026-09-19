@@ -3,6 +3,7 @@ from .SeriesEncoder import SeriesEncoder
 from .LLmEncoder import LLmEncoder
 from .NlpEncoder import NlpEncoder
 from .UniqueEncoder import UniqueEncoder
+from .OrdinalEncoder import OrdinalEncoder
 from .Normalized import MinMaxScaler, StandardScaler, RobustScaler, MaxAbsScaler, UnitNormScaler, ScalerFactory
 from .ImageEncoder import ImageProcessor, ImagePathProcessor
 

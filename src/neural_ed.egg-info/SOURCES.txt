@@ -4,6 +4,7 @@ src/neural_ed/ImageEncoder.py
 src/neural_ed/LLmEncoder.py
 src/neural_ed/NlpEncoder.py
 src/neural_ed/Normalized.py
+src/neural_ed/OrdinalEncoder.py
 src/neural_ed/SeriesEncoder.py
 src/neural_ed/UniqueEncoder.py
 src/neural_ed/__init__.py
