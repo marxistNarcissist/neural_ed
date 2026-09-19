@@ -288,6 +288,13 @@ proc.last_shape_, proc.last_scale_, proc.last_pad_   # debug metadata
   pipeline; returns `(1, C, H, W)` (or `(C, H, W)` if `add_batch=False`).
 - `process_batch(images: Iterable) -> torch.Tensor` — stacks `process` over
   multiple in-memory images into `(N, C, H, W)`.
+- `denormalize(t: torch.Tensor) -> torch.Tensor` — reverses the mean/std
+  normalization, clamped back to `[0, 1]`. Accepts either `(C, H, W)` or a
+  batched `(N, C, H, W)` tensor. Useful before visualizing a processed image.
+- `to_numpy_image(t: torch.Tensor) -> np.ndarray` — denormalizes, scales to
+  `[0, 255]`, and permutes to `uint8` `(H, W, C)` — ready for `matplotlib`,
+  `cv2`, or `PIL`. Accepts `(C, H, W)` or `(1, C, H, W)` (batch dim is
+  dropped); a single grayscale channel is squeezed out.
 - `__call__(image, **kw)` — alias for `process`.
 
 **Attributes:** `size`, `mean`, `std`, `out_channels`, `keep_aspect`, `device`,
@@ -350,3 +357,7 @@ print(result.summary())
 - `PAD_LABEL = -100` (in `LLmEncoder.py`) matches PyTorch's
   `CrossEntropyLoss(ignore_index=-100)` default, so `labels` can be passed
   straight to a standard LM loss without extra configuration.
+- Every class above is importable straight from `neural_ed` (see the
+  package's `__init__.py`); `__all__` also exposes the underlying method
+  names (`fit_transform`, `process_path`, `to_numpy_image`, `summary`, etc.)
+  for tooling that introspects the package.

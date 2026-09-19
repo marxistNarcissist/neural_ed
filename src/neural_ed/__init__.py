@@ -16,5 +16,10 @@ __all__ = ["llm_encode",
            "fit_transform",
            "inverse_transform",
            "process_path",
-           
+           "to_numpy_image",
+           "summary",
+           "_is_image_file",
+           "resolve_paths",
+           "scan",
+           "process"
            ]
